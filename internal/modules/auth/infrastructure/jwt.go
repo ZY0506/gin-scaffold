@@ -73,6 +73,16 @@ func (s *JWTService) GetJTI(tokenString string) (string, error) {
 	return claims.ID, nil
 }
 
+// ParseToken 解析 Token，返回 userID, role, jti, tokenType, err
+// 适配 auth/application.JWTService 接口
+func (s *JWTService) ParseToken(tokenString string) (userID uint, role string, jti string, tokenType string, err error) {
+	claims, err := s.ValidateToken(tokenString)
+	if err != nil {
+		return 0, "", "", "", err
+	}
+	return claims.UserID, claims.Role, claims.ID, claims.TokenType, nil
+}
+
 // generateToken 生成单个 Token
 func (s *JWTService) generateToken(userID uint, role, tokenType string, expire time.Duration) (string, error) {
 	now := time.Now()
