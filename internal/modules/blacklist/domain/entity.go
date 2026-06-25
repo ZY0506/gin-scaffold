@@ -12,6 +12,8 @@ type Blacklist struct {
 	BlockedAt time.Time  `json:"blocked_at"`                           // 封禁时间
 	ExpiredAt *time.Time `gorm:"index" json:"expired_at,omitempty"`    // 到期时间（空=永久）
 	IsActive  bool       `gorm:"default:true;index" json:"is_active"`  // 是否生效
+	CreatedAt time.Time  `json:"created_at"`
+	UpdatedAt time.Time  `json:"updated_at"`
 }
 
 func (b *Blacklist) IsExpired() bool {
