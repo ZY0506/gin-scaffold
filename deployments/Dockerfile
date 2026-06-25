@@ -26,6 +26,7 @@ WORKDIR /app
 COPY --from=builder /build/server .
 COPY --from=builder /build/config/config.yaml ./config/
 COPY --from=builder /build/config/rbac_model.conf ./config/
+COPY --from=builder /build/config/policy.csv ./config/
 
 EXPOSE 8080
 

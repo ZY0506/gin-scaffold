@@ -88,7 +88,8 @@ type JWTConfig struct {
 }
 
 type CasbinConfig struct {
-	ModelPath string `mapstructure:"model_path"`
+	ModelPath  string `mapstructure:"model_path"`
+	PolicyPath string `mapstructure:"policy_path"`
 }
 
 type RateLimitConfig struct {

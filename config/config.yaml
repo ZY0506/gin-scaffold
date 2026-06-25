@@ -33,6 +33,7 @@ jwt:
 
 casbin:
   model_path: config/rbac_model.conf
+  policy_path: config/policy.csv
 
 rate_limit:
   rate: 100                   # 每秒允许的请求数

@@ -1,0 +1,14 @@
+# RBAC 策略定义
+# 格式: p, 角色, 资源路径, 请求方法(GET|POST|PUT|PATCH|DELETE)
+# 角色继承: g, 子角色, 父角色
+
+# ---------- 角色定义 ----------
+# admin 继承所有 user 的权限
+g, admin, user
+
+# ---------- 权限策略 ----------
+# 管理员拥有所有管理端接口的完全权限
+p, admin, /api/v1/admin/*, (GET|POST|PUT|PATCH|DELETE)
+
+# 普通用户的认证相关权限
+p, user, /api/v1/auth/*, (GET|POST|PUT|DELETE)
