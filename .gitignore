@@ -40,3 +40,6 @@ go.work.sum
 cover.out
 coverage.out
 *.trace
+
+.claude
+/docs
