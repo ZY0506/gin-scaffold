@@ -1,0 +1,33 @@
+# Binary
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test
+*.test
+*.out
+
+# Go
+*.o
+*.a
+*.prof
+/vendor/
+
+# IDE
+.idea/
+*.swp
+*.swo
+.vscode/
+
+# Env
+.env
+
+# Build
+/tmp/
+/dist/
+
+# OS
+.DS_Store
+Thumbs.db
