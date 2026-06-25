@@ -2,7 +2,7 @@ package infrastructure
 
 import (
 	"context"
-	"time"
+	"errors"
 
 	"gorm.io/gorm"
 
@@ -21,51 +21,78 @@ func (r *GormUserRepo) Create(ctx context.Context, user *domain.User) error {
 	return r.db.WithContext(ctx).Create(user).Error
 }
 
+func (r *GormUserRepo) findBy(ctx context.Context, field, value string) (*domain.User, error) {
+	var user domain.User
+	err := r.db.WithContext(ctx).Where(field+" = ?", value).First(&user).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, domain.ErrUserNotFound
+		}
+		return nil, err
+	}
+	return &user, nil
+}
+
 func (r *GormUserRepo) FindByID(ctx context.Context, id uint) (*domain.User, error) {
 	var user domain.User
 	err := r.db.WithContext(ctx).First(&user, id).Error
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, domain.ErrUserNotFound
+		}
 		return nil, err
 	}
 	return &user, nil
 }
 
 func (r *GormUserRepo) FindByUsername(ctx context.Context, username string) (*domain.User, error) {
-	var user domain.User
-	err := r.db.WithContext(ctx).Where("username = ?", username).First(&user).Error
-	if err != nil {
-		return nil, err
-	}
-	return &user, nil
+	return r.findBy(ctx, "username", username)
 }
 
 func (r *GormUserRepo) FindByEmail(ctx context.Context, email string) (*domain.User, error) {
-	var user domain.User
-	err := r.db.WithContext(ctx).Where("email = ?", email).First(&user).Error
-	if err != nil {
-		return nil, err
-	}
-	return &user, nil
+	return r.findBy(ctx, "email", email)
 }
 
 func (r *GormUserRepo) FindByAccount(ctx context.Context, account string) (*domain.User, error) {
 	var user domain.User
 	err := r.db.WithContext(ctx).Where("username = ? OR email = ?", account, account).First(&user).Error
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, domain.ErrUserNotFound
+		}
 		return nil, err
 	}
 	return &user, nil
 }
 
 func (r *GormUserRepo) Update(ctx context.Context, user *domain.User) error {
-	return r.db.WithContext(ctx).Save(user).Error
+	// 使用 Updates 而非 Save，避免零值字段覆盖数据库已有值
+	return r.db.WithContext(ctx).Model(&domain.User{}).Where("id = ?", user.ID).Updates(user).Error
 }
 
 func (r *GormUserRepo) Delete(ctx context.Context, id uint) error {
-	return r.db.WithContext(ctx).Delete(&domain.User{}, id).Error
+	result := r.db.WithContext(ctx).Delete(&domain.User{}, id)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return domain.ErrUserNotFound
+	}
+	return nil
 }
 
-func (r *GormUserRepo) List(ctx context.Context, page, pageSize int, conditions map[string]interface{}) ([]domain.User, int64, error) {
+func (r *GormUserRepo) List(ctx context.Context, page, pageSize int, conditions map[string]any) ([]domain.User, int64, error) {
+	// 参数边界校验
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = 10
+	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
+
 	var users []domain.User
 	var total int64
 
@@ -87,9 +114,8 @@ func (r *GormUserRepo) List(ctx context.Context, page, pageSize int, conditions 
 }
 
 func (r *GormUserRepo) UpdateLoginInfo(ctx context.Context, id uint, ip string) error {
-	now := time.Now()
-	return r.db.WithContext(ctx).Model(&domain.User{}).Where("id = ?", id).Updates(map[string]interface{}{
-		"last_login_at": &now,
+	return r.db.WithContext(ctx).Model(&domain.User{}).Where("id = ?", id).Updates(map[string]any{
+		"last_login_at": gorm.Expr("NOW()"),
 		"last_login_ip": ip,
 	}).Error
 }
