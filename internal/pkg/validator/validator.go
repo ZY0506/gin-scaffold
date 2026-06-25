@@ -1,15 +1,9 @@
 package validator
 
 import (
-	"regexp"
 	"unicode"
 
 	"github.com/go-playground/validator/v10"
-)
-
-var (
-	// 密码：至少8位，必须包含字母和数字
-	passwordRegex = regexp.MustCompile(`^[a-zA-Z0-9]+$`)
 )
 
 // RegisterCustomValidators 注册自定义验证规则到 gin 的 validator
@@ -20,13 +14,10 @@ func RegisterCustomValidators(v *validator.Validate) error {
 	return nil
 }
 
-// validatePassword 密码强度校验：至少8位，只能包含字母和数字，必须同时包含字母和数字
+// validatePassword 密码强度校验：至少8位，必须同时包含字母和数字，允许特殊字符
 func validatePassword(fl validator.FieldLevel) bool {
 	pwd := fl.Field().String()
 	if len(pwd) < 8 {
-		return false
-	}
-	if !passwordRegex.MatchString(pwd) {
 		return false
 	}
 
@@ -35,10 +26,10 @@ func validatePassword(fl validator.FieldLevel) bool {
 	for _, r := range pwd {
 		if unicode.IsLetter(r) {
 			hasLetter = true
-		}
-		if unicode.IsDigit(r) {
+		} else if unicode.IsDigit(r) {
 			hasDigit = true
 		}
+		// 允许特殊字符，不做限制
 	}
 	return hasLetter && hasDigit
 }

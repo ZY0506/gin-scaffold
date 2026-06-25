@@ -13,6 +13,9 @@ type Error struct {
 }
 
 func (e *Error) Error() string {
+	if e.err != nil {
+		return fmt.Sprintf("%s: %v", e.Msg, e.err)
+	}
 	return e.Msg
 }
 
@@ -43,6 +46,7 @@ func Wrapf(err error, code int, format string, args ...interface{}) *Error {
 }
 
 // FromError 从普通 error 提取业务错误码，如果是业务错误则返回原错误码，否则返回 Internal
+// 注意：返回的消息是固定的 "internal server error"，不会泄露内部错误细节
 func FromError(err error) *Error {
 	if err == nil {
 		return nil
@@ -51,7 +55,11 @@ func FromError(err error) *Error {
 	if asErr := pkgerrors.As(err, &bizErr); asErr {
 		return bizErr
 	}
-	return New(ErrInternal, err.Error())
+	return &Error{
+		Code: ErrInternal,
+		Msg:  "internal server error",
+		err:  pkgerrors.Wrap(err, "internal server error"),
+	}
 }
 
 // IsCode 判断错误码是否匹配

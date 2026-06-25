@@ -44,9 +44,15 @@ func Fail(c *gin.Context, code int, msg string) {
 
 // AbortWithError 用于中间件中终止请求并返回错误
 func AbortWithError(c *gin.Context, httpStatus int, err *bizErrors.Error) {
+	code := bizErrors.ErrInternal
+	msg := "internal server error"
+	if err != nil {
+		code = err.Code
+		msg = err.Msg
+	}
 	c.AbortWithStatusJSON(httpStatus, Response{
-		Code: err.Code,
-		Msg:  err.Msg,
+		Code: code,
+		Msg:  msg,
 		Data: nil,
 	})
 }
