@@ -81,7 +81,7 @@ func (r *GormUserRepo) Delete(ctx context.Context, id uint) error {
 	return nil
 }
 
-func (r *GormUserRepo) List(ctx context.Context, page, pageSize int, conditions map[string]any) ([]domain.User, int64, error) {
+func (r *GormUserRepo) List(ctx context.Context, page, pageSize int, conditions map[string][]interface{}) ([]domain.User, int64, error) {
 	// 参数边界校验
 	if page < 1 {
 		page = 1
@@ -97,8 +97,8 @@ func (r *GormUserRepo) List(ctx context.Context, page, pageSize int, conditions 
 	var total int64
 
 	query := r.db.WithContext(ctx).Model(&domain.User{})
-	for key, val := range conditions {
-		query = query.Where(key, val)
+	for key, args := range conditions {
+		query = query.Where(key, args...)
 	}
 
 	if err := query.Count(&total).Error; err != nil {

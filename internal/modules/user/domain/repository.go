@@ -22,7 +22,8 @@ type UserRepository interface {
 	FindByAccount(ctx context.Context, account string) (*User, error)
 	Update(ctx context.Context, user *User) error
 	Delete(ctx context.Context, id uint) error
-	// List 分页查询，conditions 为 GORM Where 条件的 key-value 映射
-	List(ctx context.Context, page, pageSize int, conditions map[string]any) ([]User, int64, error)
+	// List 分页查询，conditions 为 GORM Where 条件的 key-args 映射
+	// 每个 key 对应一条 Where 子句，args 为该子句的占位符参数列表
+	List(ctx context.Context, page, pageSize int, conditions map[string][]interface{}) ([]User, int64, error)
 	UpdateLoginInfo(ctx context.Context, id uint, ip string) error
 }
