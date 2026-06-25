@@ -13,14 +13,18 @@ func Register(
 	r *gin.Engine,
 	authH *authHandler.AuthHandler,
 	authMW gin.HandlerFunc,
+	userH *userHandler.UserHandler,
 	userAdminRouter *userHandler.AdminRouter,
 	blAdminRouter *blHandler.AdminRouter,
 ) {
 	// API v1 路由组
 	v1 := r.Group("/api/v1")
 
-	// 认证模块（客户端路由）
+	// 认证模块（公开 + 需要登录的认证操作）
 	authHandler.RegisterAuthRoutes(v1, authH, authMW)
+
+	// 用户模块（个人中心，需要登录）
+	userHandler.RegisterUserRoutes(v1, userH, authMW)
 
 	// 用户管理端路由（JWT + Casbin）
 	userAdminRouter.RegisterAdminRoutes(v1)

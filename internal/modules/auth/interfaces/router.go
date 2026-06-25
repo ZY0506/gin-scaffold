@@ -32,14 +32,6 @@ func RegisterAuthRoutes(r *gin.RouterGroup, handler *AuthHandler, authMiddleware
 	{
 		// 登出
 		authProtected.POST("/logout", handler.Logout)
-		// 修改密码
-		authProtected.POST("/change-password", handler.ChangePassword)
-		// 修改个人信息
-		authProtected.PUT("/profile", handler.UpdateProfile)
-		// 获取个人信息
-		authProtected.GET("/profile", handler.GetUserInfo)
-		// 注销账户
-		authProtected.DELETE("/account", handler.DeleteAccount)
 	}
 }
 

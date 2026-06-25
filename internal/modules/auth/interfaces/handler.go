@@ -109,29 +109,6 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 	response.Success(c, nil)
 }
 
-// ChangePassword 修改密码
-// POST /api/v1/auth/change-password
-func (h *AuthHandler) ChangePassword(c *gin.Context) {
-	userID := middleware.GetUserID(c)
-	if userID == 0 {
-		response.Fail(c, bizErrors.ErrUnauthorized, "未获取到用户信息")
-		return
-	}
-
-	var req application.ChangePasswordReq
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, bizErrors.ErrBadRequest, err.Error())
-		return
-	}
-
-	if err := h.svc.ChangePassword(c.Request.Context(), userID, &req); err != nil {
-		response.Fail(c, extractCode(err), extractMsg(err))
-		return
-	}
-
-	response.Success(c, nil)
-}
-
 // ResetPassword 重置密码
 // POST /api/v1/auth/reset-password
 func (h *AuthHandler) ResetPassword(c *gin.Context) {
@@ -142,64 +119,6 @@ func (h *AuthHandler) ResetPassword(c *gin.Context) {
 	}
 
 	if err := h.svc.ResetPassword(c.Request.Context(), &req); err != nil {
-		response.Fail(c, extractCode(err), extractMsg(err))
-		return
-	}
-
-	response.Success(c, nil)
-}
-
-// UpdateProfile 修改个人信息
-// PUT /api/v1/auth/profile
-func (h *AuthHandler) UpdateProfile(c *gin.Context) {
-	userID := middleware.GetUserID(c)
-	if userID == 0 {
-		response.Fail(c, bizErrors.ErrUnauthorized, "未获取到用户信息")
-		return
-	}
-
-	var req application.UpdateProfileReq
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, bizErrors.ErrBadRequest, err.Error())
-		return
-	}
-
-	if err := h.svc.UpdateProfile(c.Request.Context(), userID, &req); err != nil {
-		response.Fail(c, extractCode(err), extractMsg(err))
-		return
-	}
-
-	response.Success(c, nil)
-}
-
-// GetUserInfo 获取个人信息
-// GET /api/v1/auth/profile
-func (h *AuthHandler) GetUserInfo(c *gin.Context) {
-	userID := middleware.GetUserID(c)
-	if userID == 0 {
-		response.Fail(c, bizErrors.ErrUnauthorized, "未获取到用户信息")
-		return
-	}
-
-	resp, err := h.svc.GetUserInfo(c.Request.Context(), userID)
-	if err != nil {
-		response.Fail(c, extractCode(err), extractMsg(err))
-		return
-	}
-
-	response.Success(c, resp)
-}
-
-// DeleteAccount 注销账户
-// DELETE /api/v1/auth/account
-func (h *AuthHandler) DeleteAccount(c *gin.Context) {
-	userID := middleware.GetUserID(c)
-	if userID == 0 {
-		response.Fail(c, bizErrors.ErrUnauthorized, "未获取到用户信息")
-		return
-	}
-
-	if err := h.svc.DeleteAccount(c.Request.Context(), userID); err != nil {
 		response.Fail(c, extractCode(err), extractMsg(err))
 		return
 	}

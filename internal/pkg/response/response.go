@@ -57,6 +57,7 @@ func AbortWithError(c *gin.Context, httpStatus int, err *bizErrors.Error) {
 	})
 }
 
+// Page 快捷方法，使用 200 状态码返回分页数据
 func Page(c *gin.Context, list interface{}, total, page, pageSize int64) {
 	c.JSON(http.StatusOK, Response{
 		Code: bizErrors.Success,

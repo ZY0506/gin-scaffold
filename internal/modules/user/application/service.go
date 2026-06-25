@@ -6,8 +6,12 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/ZY0506/gin-scaffold/internal/pkg/errors"
 	userDomain "github.com/ZY0506/gin-scaffold/internal/modules/user/domain"
+	"github.com/ZY0506/gin-scaffold/internal/pkg/errors"
+)
+
+const (
+	dateLayout = "2006-01-02"
 )
 
 type UserService struct {
@@ -143,6 +147,87 @@ func (s *UserService) ToggleStatus(ctx context.Context, id uint, status int) err
 
 	user.Status = status
 	return s.userRepo.Update(ctx, user)
+}
+
+// ChangePassword 修改密码（需验证旧密码）
+func (s *UserService) ChangePassword(ctx context.Context, userID uint, req *ChangePasswordReq) error {
+	user, err := s.userRepo.FindByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.OldPassword)); err != nil {
+		return errors.New(errors.ErrPwdMismatch, "原密码错误")
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return errors.Wrap(err, errors.ErrPwdHashFailed, "密码加密失败")
+	}
+
+	user.Password = string(hashedPassword)
+	return s.userRepo.Update(ctx, user)
+}
+
+// UpdateProfile 修改个人信息
+func (s *UserService) UpdateProfile(ctx context.Context, userID uint, req *UpdateProfileReq) error {
+	user, err := s.userRepo.FindByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+
+	if req.Nickname != "" {
+		user.Nickname = req.Nickname
+	}
+	if req.Avatar != "" {
+		user.Avatar = req.Avatar
+	}
+	if req.Gender != nil {
+		user.Gender = *req.Gender
+	}
+	if req.Birthday != "" {
+		t, parseErr := time.Parse(dateLayout, req.Birthday)
+		if parseErr != nil {
+			return errors.New(errors.ErrBadRequest, "生日格式错误，正确格式: "+dateLayout)
+		}
+		user.Birthday = &t
+	}
+
+	return s.userRepo.Update(ctx, user)
+}
+
+// GetUserInfo 获取当前登录用户个人信息
+func (s *UserService) GetUserInfo(ctx context.Context, userID uint) (*UserInfoResp, error) {
+	user, err := s.userRepo.FindByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := &UserInfoResp{
+		ID:        user.ID,
+		Username:  user.Username,
+		Email:     user.Email,
+		Nickname:  user.Nickname,
+		Avatar:    user.Avatar,
+		Gender:    user.Gender,
+		Status:    user.Status,
+		CreatedAt: user.CreatedAt.Format(time.DateTime),
+	}
+
+	if user.Birthday != nil {
+		resp.Birthday = user.Birthday.Format(dateLayout)
+	}
+	if user.LastLoginAt != nil {
+		resp.LastLoginAt = user.LastLoginAt.Format(time.DateTime)
+	}
+	resp.LastLoginIP = user.LastLoginIP
+
+	return resp, nil
+}
+
+// DeleteAccount 注销账户（硬删除）
+func (s *UserService) DeleteAccount(ctx context.Context, userID uint) error {
+	return s.userRepo.Delete(ctx, userID)
 }
 
 func toUserItemResp(u *userDomain.User) *UserItemResp {

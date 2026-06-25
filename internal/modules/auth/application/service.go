@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	codeTTL    = 300               // 验证码有效期（秒）
+	codeTTL    = 300 // 验证码有效期（秒）
 	codeChars  = "0123456789"
 	codeLength = 6
 	roleUser   = "user" // 默认用户角色
@@ -216,30 +216,6 @@ func (s *AuthService) Logout(ctx context.Context, jti string) error {
 	return s.tokenBlacklist.Add(ctx, jti, s.cfg.JWT.AccessExpire)
 }
 
-// ChangePassword 修改密码（需验证旧密码）
-func (s *AuthService) ChangePassword(ctx context.Context, userID uint, req *ChangePasswordReq) error {
-	// 1. 查找用户
-	user, err := s.userRepo.FindByID(ctx, userID)
-	if err != nil {
-		return err
-	}
-
-	// 2. 验证旧密码
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.OldPassword)); err != nil {
-		return bizErrors.New(bizErrors.ErrPwdMismatch, "原密码错误")
-	}
-
-	// 3. 加密新密码
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
-	if err != nil {
-		return bizErrors.Wrap(err, bizErrors.ErrPwdHashFailed, "密码加密失败")
-	}
-
-	// 4. 更新密码
-	user.Password = string(hashedPassword)
-	return s.userRepo.Update(ctx, user)
-}
-
 // ResetPassword 重置密码（通过邮箱验证码）
 func (s *AuthService) ResetPassword(ctx context.Context, req *ResetPasswordReq) error {
 	// 1. 验证验证码
@@ -269,67 +245,6 @@ func (s *AuthService) ResetPassword(ctx context.Context, req *ResetPasswordReq) 
 	_ = s.codeStore.Del(ctx, req.Email)
 
 	return nil
-}
-
-// UpdateProfile 修改个人信息
-func (s *AuthService) UpdateProfile(ctx context.Context, userID uint, req *UpdateProfileReq) error {
-	user, err := s.userRepo.FindByID(ctx, userID)
-	if err != nil {
-		return err
-	}
-
-	if req.Nickname != "" {
-		user.Nickname = req.Nickname
-	}
-	if req.Avatar != "" {
-		user.Avatar = req.Avatar
-	}
-	if req.Gender != nil {
-		user.Gender = *req.Gender
-	}
-	if req.Birthday != "" {
-		t, parseErr := time.Parse("2006-01-02", req.Birthday)
-		if parseErr != nil {
-			return bizErrors.New(bizErrors.ErrBadRequest, "生日格式错误，正确格式: 2006-01-02")
-		}
-		user.Birthday = &t
-	}
-
-	return s.userRepo.Update(ctx, user)
-}
-
-// GetUserInfo 获取当前登录用户信息
-func (s *AuthService) GetUserInfo(ctx context.Context, userID uint) (*UserInfoResp, error) {
-	user, err := s.userRepo.FindByID(ctx, userID)
-	if err != nil {
-		return nil, err
-	}
-
-	resp := &UserInfoResp{
-		ID:        user.ID,
-		Username:  user.Username,
-		Email:     user.Email,
-		Nickname:  user.Nickname,
-		Avatar:    user.Avatar,
-		Gender:    user.Gender,
-		Status:    user.Status,
-		CreatedAt: user.CreatedAt.Format("2006-01-02 15:04:05"),
-	}
-
-	if user.Birthday != nil {
-		resp.Birthday = user.Birthday.Format("2006-01-02")
-	}
-	if user.LastLoginAt != nil {
-		resp.LastLoginAt = user.LastLoginAt.Format("2006-01-02 15:04:05")
-	}
-	resp.LastLoginIP = user.LastLoginIP
-
-	return resp, nil
-}
-
-// DeleteAccount 注销账户
-func (s *AuthService) DeleteAccount(ctx context.Context, userID uint) error {
-	return s.userRepo.Delete(ctx, userID)
 }
 
 // verifyCode 验证邮箱验证码

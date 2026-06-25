@@ -94,7 +94,7 @@ func main() {
 	blAdminRouter := blHandler.NewAdminRouter(blH, authMW, casbinMW)
 
 	// 13. 注册路由
-	router.Register(ginEngine, authH, authMW, userAdminRouter, blAdminRouter)
+	router.Register(ginEngine, authH, authMW, userH, userAdminRouter, blAdminRouter)
 
 	// 14. 启动服务
 	zapLogger.Info("服务启动", zap.String("addr", cfg.Server.Addr()))
