@@ -1,4 +1,4 @@
-.PHONY: help run build test lint tidy docker-up docker-down
+.PHONY: help run build test lint tidy clean docker-up docker-down docker-build migrate fmt
 
 APP_NAME = gin-scaffold
 BUILD_DIR = ./tmp
@@ -20,6 +20,9 @@ lint: ## 代码检查（需安装 golangci-lint）
 
 tidy: ## 整理依赖
 	go mod tidy
+
+clean: ## 清理构建产物
+	rm -rf $(BUILD_DIR)
 
 docker-up: ## 启动 Docker 容器
 	docker-compose -f deployments/docker-compose.yml up -d

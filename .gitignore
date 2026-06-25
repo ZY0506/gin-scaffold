@@ -31,3 +31,12 @@
 # OS
 .DS_Store
 Thumbs.db
+
+# Go workspace
+go.work
+go.work.sum
+
+# Coverage
+cover.out
+coverage.out
+*.trace

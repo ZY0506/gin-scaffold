@@ -29,6 +29,7 @@ func LoadConfig() (*Config, error) {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
 			return nil, fmt.Errorf("读取配置文件失败: %w", err)
 		}
+		fmt.Println("警告: config.yaml 未找到，将使用零值配置")
 	}
 
 	// 3. 系统环境变量覆盖（最高优先级）
@@ -41,15 +42,21 @@ func LoadConfig() (*Config, error) {
 		val := v.GetString(key)
 		if len(val) > 3 && val[:2] == "${" && val[len(val)-1:] == "}" {
 			envKey := val[2 : len(val)-1]
-			if envVal := os.Getenv(envKey); envVal != "" {
-				v.Set(key, envVal)
+			envVal := os.Getenv(envKey)
+			if envVal == "" {
+				return nil, fmt.Errorf("环境变量 %s 未设置，请检查 .env 文件", envKey)
 			}
+			v.Set(key, envVal)
 		}
 	}
 
 	var cfg Config
 	if err := v.Unmarshal(&cfg); err != nil {
 		return nil, fmt.Errorf("配置反序列化失败: %w", err)
+	}
+
+	if err := cfg.Validate(); err != nil {
+		return nil, fmt.Errorf("配置校验失败: %w", err)
 	}
 
 	return &cfg, nil
