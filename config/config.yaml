@@ -11,7 +11,7 @@ server:
 db:
   driver: mysql
   host: localhost
-  port: 3306
+  port: 13306              # 本地开发端口；Docker 容器内用 mysql:3306（见 docker-compose）
   user: root
   password: ${DB_PASSWORD}
   db_name: gin_scaffold
@@ -21,7 +21,7 @@ db:
 
 redis:
   host: localhost
-  port: 6379
+  port: 16379              # 本地开发端口；Docker 容器内用 redis:6379（见 docker-compose）
   password: ${REDIS_PASSWORD}
   db: 0
 

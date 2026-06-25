@@ -26,6 +26,9 @@
 
 # Build
 /tmp/
+
+# Storage
+/storage/
 /dist/
 
 # OS
