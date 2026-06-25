@@ -5,31 +5,38 @@ import (
 	"os"
 	"strings"
 
+	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
 )
 
+// LoadConfig 加载配置，优先级：系统环境变量 > .env > config.yaml
 func LoadConfig() (*Config, error) {
-	v := viper.New()
+	// 1. 先加载 .env 到进程环境变量（使 ${VAR} 占位符和 AutomaticEnv 都能读取到）
+	envFile := ".env"
+	if _, err := os.Stat(envFile); err == nil {
+		if err := godotenv.Load(envFile); err != nil {
+			return nil, fmt.Errorf("加载 .env 文件失败: %w", err)
+		}
+	}
 
-	// 1. 默认配置文件
+	// 2. 读取 config.yaml 默认配置
+	v := viper.New()
 	v.SetConfigName("config")
 	v.SetConfigType("yaml")
 	v.AddConfigPath(".")
 
-	// 读取 config.yaml
 	if err := v.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
 			return nil, fmt.Errorf("读取配置文件失败: %w", err)
 		}
-		// config.yaml 不存在可以接受，会用默认值
 	}
 
-	// 2. 环境变量覆盖
-	v.SetEnvPrefix("")            // 无前缀
+	// 3. 系统环境变量覆盖（最高优先级）
+	v.SetEnvPrefix("")
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	v.AutomaticEnv()
 
-	// 手动从环境变量读取 yaml 中 ${VAR} 格式的占位符并覆盖
+	// 4. 解析 yaml 中 ${VAR} 格式的占位符
 	for _, key := range v.AllKeys() {
 		val := v.GetString(key)
 		if len(val) > 3 && val[:2] == "${" && val[len(val)-1:] == "}" {
@@ -37,16 +44,6 @@ func LoadConfig() (*Config, error) {
 			if envVal := os.Getenv(envKey); envVal != "" {
 				v.Set(key, envVal)
 			}
-		}
-	}
-
-	// 3. 读 .env 文件
-	envFile := ".env"
-	if _, err := os.Stat(envFile); err == nil {
-		v.SetConfigFile(envFile)
-		v.SetConfigType("env")
-		if err := v.MergeInConfig(); err != nil {
-			return nil, fmt.Errorf("读取 .env 文件失败: %w", err)
 		}
 	}
 

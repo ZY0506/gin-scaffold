@@ -4,7 +4,10 @@ go 1.23.0
 
 // 先不写 require，后面通过 go mod tidy 自动解决
 
-require github.com/spf13/viper v1.21.0
+require (
+	github.com/joho/godotenv v1.5.1
+	github.com/spf13/viper v1.21.0
+)
 
 require (
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
