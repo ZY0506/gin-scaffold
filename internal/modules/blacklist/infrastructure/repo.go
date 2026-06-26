@@ -95,6 +95,22 @@ func (r *GormBlacklistRepo) List(ctx context.Context, page, pageSize int) ([]dom
 	return list, total, nil
 }
 
+func (r *GormBlacklistRepo) FindByID(ctx context.Context, id uint) (*domain.Blacklist, error) {
+	var bl domain.Blacklist
+	err := r.db.WithContext(ctx).First(&bl, id).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, domain.ErrBlacklistNotFound
+		}
+		return nil, err
+	}
+	return &bl, nil
+}
+
+func (r *GormBlacklistRepo) Update(ctx context.Context, bl *domain.Blacklist) error {
+	return r.db.WithContext(ctx).Model(&domain.Blacklist{}).Where("id = ?", bl.ID).Updates(bl).Error
+}
+
 func (r *GormBlacklistRepo) Deactivate(ctx context.Context, id uint) error {
 	result := r.db.WithContext(ctx).Model(&domain.Blacklist{}).Where("id = ?", id).Update("is_active", false)
 	if result.Error != nil {

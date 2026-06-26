@@ -1,8 +1,16 @@
 package interfaces
 
 import (
+	"context"
 	"errors"
+	"fmt"
+	"io"
+	"math/rand"
+	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -93,6 +101,102 @@ func (h *UserHandler) DeleteAccount(c *gin.Context) {
 	response.Success(c, nil)
 }
 
+// UploadAvatar 上传头像
+// POST /api/v1/user/avatar (multipart/form-data, field: "file")
+func (h *UserHandler) UploadAvatar(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+	if userID == 0 {
+		response.Fail(c, bizErrors.ErrUnauthorized, "未获取到用户信息")
+		return
+	}
+
+	// 1. 获取上传文件
+	file, header, err := c.Request.FormFile("file")
+	if err != nil {
+		response.Fail(c, bizErrors.ErrBadRequest, "请选择要上传的文件")
+		return
+	}
+	defer file.Close()
+
+	// 2. 校验文件扩展名
+	ext := strings.ToLower(filepath.Ext(header.Filename))
+	if !h.allowedExts[ext] {
+		response.Fail(c, bizErrors.ErrFileTypeNotAllowed, fmt.Sprintf("不支持的文件类型: %s，允许: jpg/jpeg/png/gif/webp", ext))
+		return
+	}
+
+	// 3. 校验文件大小
+	if header.Size > h.maxSize {
+		response.Fail(c, bizErrors.ErrFileTooLarge, fmt.Sprintf("文件大小超过限制 (%d MB)", h.maxSize/(1024*1024)))
+		return
+	}
+
+	// 4. 确保存储目录存在
+	if err := os.MkdirAll(h.saveDir, 0755); err != nil {
+		response.Fail(c, bizErrors.ErrUploadFailed, "创建存储目录失败")
+		return
+	}
+
+	// 5. 生成唯一文件名: {userID}_{时间戳}_{4位随机}.{ext}
+	ts := time.Now().UnixMilli()
+	randSuffix := fmt.Sprintf("%04d", rand.Intn(10000))
+	filename := fmt.Sprintf("%d_%d_%s%s", userID, ts, randSuffix, ext)
+	savePath := filepath.Join(h.saveDir, filename)
+
+	// 6. 保存文件
+	out, err := os.Create(savePath)
+	if err != nil {
+		response.Fail(c, bizErrors.ErrUploadFailed, "文件保存失败")
+		return
+	}
+	defer out.Close()
+
+	if _, err := io.Copy(out, file); err != nil {
+		os.Remove(savePath)
+		response.Fail(c, bizErrors.ErrUploadFailed, "文件保存失败")
+		return
+	}
+
+	// 7. 生成头像访问 URL
+	avatarURL := "/uploads/avatars/" + filename
+
+	// 8. 删除旧头像文件
+	if err := h.deleteOldAvatar(c.Request.Context(), userID, avatarURL); err != nil {
+		// 删除旧文件失败不影响主流程，只记录日志
+	}
+
+	// 9. 更新数据库中的头像字段
+	if err := h.svc.UpdateAvatar(c.Request.Context(), userID, avatarURL); err != nil {
+		// 数据库更新失败，删除已保存的文件
+		os.Remove(savePath)
+		response.Fail(c, bizErrors.ErrUploadFailed, "头像更新失败")
+		return
+	}
+
+	response.Success(c, gin.H{"avatar": avatarURL})
+}
+
+// deleteOldAvatar 删除用户旧的头像文件
+func (h *UserHandler) deleteOldAvatar(ctx context.Context, userID uint, newAvatarURL string) error {
+	user, err := h.svc.GetUserInfo(ctx, userID)
+	if err != nil {
+		return err
+	}
+
+	oldURL := user.Avatar
+	if oldURL == "" || oldURL == newAvatarURL {
+		return nil
+	}
+
+	// 只清理本地上传的头像文件
+	if strings.HasPrefix(oldURL, "/uploads/avatars/") {
+		filename := strings.TrimPrefix(oldURL, "/uploads/avatars/")
+		oldPath := filepath.Join(h.saveDir, filename)
+		os.Remove(oldPath) // 删除失败不影响主流程
+	}
+	return nil
+}
+
 // extractCode 从 error 中提取业务错误码
 func extractCode(err error) int {
 	var bizErr *bizErrors.Error
@@ -112,11 +216,23 @@ func extractMsg(err error) string {
 }
 
 type UserHandler struct {
-	svc *application.UserService
+	svc         *application.UserService
+	saveDir     string
+	maxSize     int64
+	allowedExts map[string]bool
 }
 
-func NewUserHandler(svc *application.UserService) *UserHandler {
-	return &UserHandler{svc: svc}
+func NewUserHandler(svc *application.UserService, saveDir string, maxSize int64, allowedExts []string) *UserHandler {
+	exts := make(map[string]bool, len(allowedExts))
+	for _, ext := range allowedExts {
+		exts[strings.ToLower(ext)] = true
+	}
+	return &UserHandler{
+		svc:         svc,
+		saveDir:     saveDir,
+		maxSize:     maxSize,
+		allowedExts: exts,
+	}
 }
 
 // List 用户列表

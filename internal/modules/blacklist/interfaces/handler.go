@@ -76,3 +76,33 @@ func (h *BlacklistHandler) Deactivate(c *gin.Context) {
 
 	response.Success(c, nil)
 }
+
+// Update 修改黑名单记录
+func (h *BlacklistHandler) Update(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		response.Error(c, 400, errors.ErrBadRequest, "无效的ID")
+		return
+	}
+
+	var req application.UpdateBlacklistReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, 400, errors.ErrBadRequest, "参数错误: "+err.Error())
+		return
+	}
+
+	if err := h.svc.Update(c.Request.Context(), uint(id), &req); err != nil {
+		if errors.IsCode(err, errors.ErrBlacklisted) {
+			response.Error(c, 404, errors.ErrBlacklisted, "记录不存在")
+			return
+		}
+		if errors.IsCode(err, errors.ErrBadRequest) {
+			response.Error(c, 400, errors.ErrBadRequest, err.Error())
+			return
+		}
+		response.Error(c, 500, errors.ErrInternal, "操作失败")
+		return
+	}
+
+	response.Success(c, nil)
+}

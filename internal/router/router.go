@@ -6,6 +6,8 @@ import (
 	authHandler "github.com/ZY0506/gin-scaffold/internal/modules/auth/interfaces"
 	blHandler "github.com/ZY0506/gin-scaffold/internal/modules/blacklist/interfaces"
 	userHandler "github.com/ZY0506/gin-scaffold/internal/modules/user/interfaces"
+	"github.com/ZY0506/gin-scaffold/internal/pkg/errors"
+	"github.com/ZY0506/gin-scaffold/internal/pkg/response"
 )
 
 // Register 注册所有路由
@@ -35,5 +37,10 @@ func Register(
 	// 健康检查
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})
+	})
+
+	// 自定义 404 — 未匹配路由统一返回 JSON
+	r.NoRoute(func(c *gin.Context) {
+		response.Error(c, 404, errors.ErrNotFound, "请求的资源不存在")
 	})
 }

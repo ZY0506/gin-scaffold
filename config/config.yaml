@@ -53,3 +53,13 @@ log:
   max_backups: 30             # 保留的旧日志文件数量
   max_age: 7                  # 日志文件保留天数
   compress: true              # 是否压缩归档
+
+upload:
+  save_dir: storage/avatars   # 头像文件存储目录
+  max_size_mb: 5              # 最大文件大小 (MB)
+  allowed_exts:               # 允许的文件扩展名
+    - jpg
+    - jpeg
+    - png
+    - gif
+    - webp

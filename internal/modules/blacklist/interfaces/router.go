@@ -23,6 +23,7 @@ func (r *AdminRouter) RegisterAdminRoutes(group *gin.RouterGroup) {
 	{
 		admin.POST("/blacklist", r.handler.Create)
 		admin.GET("/blacklist", r.handler.List)
+		admin.PUT("/blacklist/:id", r.handler.Update)
 		admin.DELETE("/blacklist/:id", r.handler.Deactivate)
 	}
 }

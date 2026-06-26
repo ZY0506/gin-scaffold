@@ -169,6 +169,17 @@ func (s *UserService) ChangePassword(ctx context.Context, userID uint, req *Chan
 	return s.userRepo.Update(ctx, user)
 }
 
+// UpdateAvatar 更新头像（上传后调用）
+func (s *UserService) UpdateAvatar(ctx context.Context, userID uint, avatarURL string) error {
+	user, err := s.userRepo.FindByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+
+	user.Avatar = avatarURL
+	return s.userRepo.Update(ctx, user)
+}
+
 // UpdateProfile 修改个人信息
 func (s *UserService) UpdateProfile(ctx context.Context, userID uint, req *UpdateProfileReq) error {
 	user, err := s.userRepo.FindByID(ctx, userID)

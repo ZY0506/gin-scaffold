@@ -14,13 +14,14 @@ func RegisterUserRoutes(r *gin.RouterGroup, handler *UserHandler, authMiddleware
 		user.POST("/change-password", handler.ChangePassword)
 		user.PUT("/profile", handler.UpdateProfile)
 		user.GET("/profile", handler.GetUserInfo)
+		user.POST("/avatar", handler.UploadAvatar)
 		user.DELETE("/account", handler.DeleteAccount)
 	}
 }
 
 // RegisterUserRoutesWithDI 便捷方法
-func RegisterUserRoutesWithDI(r *gin.RouterGroup, svc *application.UserService, authMiddleware gin.HandlerFunc) {
-	handler := NewUserHandler(svc)
+func RegisterUserRoutesWithDI(r *gin.RouterGroup, svc *application.UserService, authMiddleware gin.HandlerFunc, saveDir string, maxSize int64, allowedExts []string) {
+	handler := NewUserHandler(svc, saveDir, maxSize, allowedExts)
 	RegisterUserRoutes(r, handler, authMiddleware)
 }
 

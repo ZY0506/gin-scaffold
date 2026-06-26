@@ -76,6 +76,27 @@ func (s *BlacklistService) List(ctx context.Context, req *BlacklistListReq) ([]B
 	return resp, total, nil
 }
 
+// Update 修改黑名单记录（原因、过期时间）
+func (s *BlacklistService) Update(ctx context.Context, id uint, req *UpdateBlacklistReq) error {
+	bl, err := s.repo.FindByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	bl.Reason = req.Reason
+	if req.ExpiredAt != "" {
+		t, err := time.Parse(time.DateTime, req.ExpiredAt)
+		if err != nil {
+			return errors.New(errors.ErrBadRequest, "到期时间格式错误，请使用 YYYY-MM-DD HH:mm:ss")
+		}
+		bl.ExpiredAt = &t
+	} else {
+		bl.ExpiredAt = nil // 清空过期时间 = 永久封禁
+	}
+
+	return s.repo.Update(ctx, bl)
+}
+
 // Deactivate 解封（软解除）
 func (s *BlacklistService) Deactivate(ctx context.Context, id uint) error {
 	return s.repo.Deactivate(ctx, id)

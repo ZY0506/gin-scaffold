@@ -14,6 +14,9 @@ var (
 
 type BlacklistRepository interface {
 	Create(ctx context.Context, bl *Blacklist) error
+	FindByID(ctx context.Context, id uint) (*Blacklist, error)
+	// Update 更新黑名单记录（原因、过期时间等）
+	Update(ctx context.Context, bl *Blacklist) error
 	// FindActiveByUserID 查询用户是否有生效的黑名单记录
 	FindActiveByUserID(ctx context.Context, userID uint) (*Blacklist, error)
 	// FindActiveByIP 查询IP是否有生效的黑名单记录

@@ -14,6 +14,7 @@ type Config struct {
 	Casbin    CasbinConfig    `mapstructure:"casbin"`
 	RateLimit RateLimitConfig `mapstructure:"rate_limit"`
 	Email     EmailConfig     `mapstructure:"email"`
+	Upload    UploadConfig    `mapstructure:"upload"`
 	Log       LogConfig       `mapstructure:"log"`
 }
 
@@ -103,6 +104,12 @@ type EmailConfig struct {
 	Username string `mapstructure:"username"`
 	Password string `mapstructure:"password"`
 	FromName string `mapstructure:"from_name"`
+}
+
+type UploadConfig struct {
+	SaveDir     string   `mapstructure:"save_dir"`
+	MaxSizeMB   int      `mapstructure:"max_size_mb"`
+	AllowedExts []string `mapstructure:"allowed_exts"`
 }
 
 type LogConfig struct {

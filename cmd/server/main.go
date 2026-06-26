@@ -9,7 +9,7 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
+	gormlogger "gorm.io/gorm/logger"
 
 	"github.com/ZY0506/gin-scaffold/config"
 	"github.com/ZY0506/gin-scaffold/internal/middleware"
@@ -17,11 +17,9 @@ import (
 	authInfra "github.com/ZY0506/gin-scaffold/internal/modules/auth/infrastructure"
 	authHandler "github.com/ZY0506/gin-scaffold/internal/modules/auth/interfaces"
 	blApp "github.com/ZY0506/gin-scaffold/internal/modules/blacklist/application"
-	blDomain "github.com/ZY0506/gin-scaffold/internal/modules/blacklist/domain"
 	blInfra "github.com/ZY0506/gin-scaffold/internal/modules/blacklist/infrastructure"
 	blHandler "github.com/ZY0506/gin-scaffold/internal/modules/blacklist/interfaces"
 	userApp "github.com/ZY0506/gin-scaffold/internal/modules/user/application"
-	userDomain "github.com/ZY0506/gin-scaffold/internal/modules/user/domain"
 	userInfra "github.com/ZY0506/gin-scaffold/internal/modules/user/infrastructure"
 	userHandler "github.com/ZY0506/gin-scaffold/internal/modules/user/interfaces"
 	"github.com/ZY0506/gin-scaffold/internal/router"
@@ -73,7 +71,7 @@ func main() {
 
 	// 9. 创建 Handler
 	authH := authHandler.NewAuthHandler(authSvc)
-	userH := userHandler.NewUserHandler(userSvc)
+	userH := userHandler.NewUserHandler(userSvc, cfg.Upload.SaveDir, int64(cfg.Upload.MaxSizeMB)*1024*1024, cfg.Upload.AllowedExts)
 	blH := blHandler.NewBlacklistHandler(blSvc)
 
 	// 10. 创建中间件
@@ -96,7 +94,10 @@ func main() {
 	// 13. 注册路由
 	router.Register(ginEngine, authH, authMW, userH, userAdminRouter, blAdminRouter)
 
-	// 14. 启动服务
+	// 14. 静态文件服务（头像等上传文件）
+	ginEngine.Static("/uploads", "./storage")
+
+	// 15. 启动服务
 	zapLogger.Info("服务启动", zap.String("addr", cfg.Server.Addr()))
 	if err := ginEngine.Run(cfg.Server.Addr()); err != nil {
 		zapLogger.Fatal("服务启动失败", zap.Error(err))
@@ -116,10 +117,10 @@ func initLogger(cfg *config.LogConfig) (*zap.Logger, error) {
 	return zapCfg.Build()
 }
 
-// initDB 初始化 MySQL 连接并自动迁移
+// initDB 初始化 MySQL 连接并执行 SQL DDL 迁移
 func initDB(cfg *config.Config) (*gorm.DB, error) {
 	db, err := gorm.Open(mysql.Open(cfg.DB.DSN()), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		Logger: gormlogger.Default.LogMode(gormlogger.Info),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("连接数据库失败: %w", err)
@@ -131,14 +132,6 @@ func initDB(cfg *config.Config) (*gorm.DB, error) {
 	}
 	sqlDB.SetMaxOpenConns(cfg.DB.MaxOpen)
 	sqlDB.SetMaxIdleConns(cfg.DB.MaxIdle)
-
-	// 自动迁移数据库表
-	if err := db.AutoMigrate(
-		&userDomain.User{},
-		&blDomain.Blacklist{},
-	); err != nil {
-		return nil, fmt.Errorf("数据库迁移失败: %w", err)
-	}
 
 	return db, nil
 }

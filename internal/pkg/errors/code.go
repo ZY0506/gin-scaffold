@@ -27,11 +27,14 @@ const (
 
 // 用户模块错误码 3xxxx
 const (
-	ErrUserNotFound  = 30001 // 用户不存在
-	ErrUsernameExist = 30002 // 用户名已存在
-	ErrEmailExist    = 30003 // 邮箱已被注册
-	ErrUserDisabled  = 30004 // 账号已被禁用
-	ErrPwdHashFailed = 30005 // 密码加密失败
-	ErrPwdMismatch   = 30006 // 密码错误
-	ErrBlacklisted   = 30007 // 账号被加入黑名单
+	ErrUserNotFound       = 30001 // 用户不存在
+	ErrUsernameExist      = 30002 // 用户名已存在
+	ErrEmailExist         = 30003 // 邮箱已被注册
+	ErrUserDisabled       = 30004 // 账号已被禁用
+	ErrPwdHashFailed      = 30005 // 密码加密失败
+	ErrPwdMismatch        = 30006 // 密码错误
+	ErrBlacklisted        = 30007 // 账号被加入黑名单
+	ErrFileTypeNotAllowed = 30008 // 文件类型不允许
+	ErrFileTooLarge       = 30009 // 文件大小超限
+	ErrUploadFailed       = 30010 // 文件保存失败
 )
