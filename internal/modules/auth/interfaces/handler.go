@@ -22,7 +22,14 @@ func NewAuthHandler(svc *application.AuthService) *AuthHandler {
 }
 
 // SendCode 发送验证码
-// POST /api/v1/auth/send-code
+// @Summary      发送邮箱验证码
+// @Description  发送验证码到指定邮箱，验证码有效期 5 分钟
+// @Tags         认证模块
+// @Accept       json
+// @Produce      json
+// @Param        req body application.SendCodeReq true "邮箱地址"
+// @Success      200 {object} response.Response
+// @Router       /auth/send-code [post]
 func (h *AuthHandler) SendCode(c *gin.Context) {
 	var req application.SendCodeReq
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -39,7 +46,14 @@ func (h *AuthHandler) SendCode(c *gin.Context) {
 }
 
 // Register 用户注册
-// POST /api/v1/auth/register
+// @Summary      用户注册
+// @Description  通过邮箱验证码注册新用户
+// @Tags         认证模块
+// @Accept       json
+// @Produce      json
+// @Param        req body application.RegisterReq true "注册信息"
+// @Success      200 {object} response.Response
+// @Router       /auth/register [post]
 func (h *AuthHandler) Register(c *gin.Context) {
 	var req application.RegisterReq
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -56,7 +70,14 @@ func (h *AuthHandler) Register(c *gin.Context) {
 }
 
 // Login 用户登录
-// POST /api/v1/auth/login
+// @Summary      用户登录
+// @Description  通过用户名/邮箱 + 密码登录，返回双 Token
+// @Tags         认证模块
+// @Accept       json
+// @Produce      json
+// @Param        req body application.LoginReq true "登录信息"
+// @Success      200 {object} response.Response{data=application.AuthTokenResp}
+// @Router       /auth/login [post]
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req application.LoginReq
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -75,7 +96,14 @@ func (h *AuthHandler) Login(c *gin.Context) {
 }
 
 // RefreshToken 刷新双 Token
-// POST /api/v1/auth/refresh
+// @Summary      刷新双 Token
+// @Description  使用 Refresh Token 获取新的 Access/Refresh Token 对
+// @Tags         认证模块
+// @Accept       json
+// @Produce      json
+// @Param        req body application.RefreshTokenReq true "刷新令牌"
+// @Success      200 {object} response.Response{data=application.AuthTokenResp}
+// @Router       /auth/refresh [post]
 func (h *AuthHandler) RefreshToken(c *gin.Context) {
 	var req application.RefreshTokenReq
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -93,7 +121,14 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 }
 
 // Logout 登出
-// POST /api/v1/auth/logout
+// @Summary      用户登出
+// @Description  将当前 Access Token 加入黑名单
+// @Tags         认证模块
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200 {object} response.Response
+// @Router       /auth/logout [post]
 func (h *AuthHandler) Logout(c *gin.Context) {
 	jti := middleware.GetJTI(c)
 	if jti == "" {
@@ -110,7 +145,14 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 }
 
 // ResetPassword 重置密码
-// POST /api/v1/auth/reset-password
+// @Summary      重置密码
+// @Description  通过邮箱验证码重置密码，无需登录
+// @Tags         认证模块
+// @Accept       json
+// @Produce      json
+// @Param        req body application.ResetPasswordReq true "重置密码信息"
+// @Success      200 {object} response.Response
+// @Router       /auth/reset-password [post]
 func (h *AuthHandler) ResetPassword(c *gin.Context) {
 	var req application.ResetPasswordReq
 	if err := c.ShouldBindJSON(&req); err != nil {

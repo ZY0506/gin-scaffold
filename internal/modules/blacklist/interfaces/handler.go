@@ -20,6 +20,15 @@ func NewBlacklistHandler(svc *application.BlacklistService) *BlacklistHandler {
 }
 
 // Create 添加黑名单
+// @Summary      添加黑名单
+// @Description  按用户ID或IP添加黑名单
+// @Tags         管理端-黑名单
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        req body application.AddBlacklistReq true "黑名单信息"
+// @Success      200 {object} response.Response
+// @Router       /admin/blacklist [post]
 func (h *BlacklistHandler) Create(c *gin.Context) {
 	var req application.AddBlacklistReq
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -41,6 +50,15 @@ func (h *BlacklistHandler) Create(c *gin.Context) {
 }
 
 // List 黑名单列表
+// @Summary      黑名单列表
+// @Description  分页查询黑名单记录
+// @Tags         管理端-黑名单
+// @Produce      json
+// @Security     BearerAuth
+// @Param        page query int false "页码" default(1)
+// @Param        page_size query int false "每页条数" default(20)
+// @Success      200 {object} response.PageData{list=[]application.BlacklistItemResp}
+// @Router       /admin/blacklist [get]
 func (h *BlacklistHandler) List(c *gin.Context) {
 	var req application.BlacklistListReq
 	if err := c.ShouldBindQuery(&req); err != nil {
@@ -58,6 +76,14 @@ func (h *BlacklistHandler) List(c *gin.Context) {
 }
 
 // Deactivate 解封
+// @Summary      解封黑名单
+// @Description  软解除黑名单记录
+// @Tags         管理端-黑名单
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id path int true "黑名单记录ID"
+// @Success      200 {object} response.Response
+// @Router       /admin/blacklist/{id} [delete]
 func (h *BlacklistHandler) Deactivate(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
@@ -78,6 +104,16 @@ func (h *BlacklistHandler) Deactivate(c *gin.Context) {
 }
 
 // Update 修改黑名单记录
+// @Summary      修改黑名单
+// @Description  修改黑名单的封禁原因和到期时间
+// @Tags         管理端-黑名单
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id path int true "黑名单记录ID"
+// @Param        req body application.UpdateBlacklistReq true "修改信息"
+// @Success      200 {object} response.Response
+// @Router       /admin/blacklist/{id} [put]
 func (h *BlacklistHandler) Update(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {

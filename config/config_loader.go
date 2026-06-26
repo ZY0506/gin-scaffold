@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -23,10 +24,11 @@ func LoadConfig() (*Config, error) {
 	v := viper.New()
 	v.SetConfigName("config")
 	v.SetConfigType("yaml")
-	v.AddConfigPath(".")
+	v.AddConfigPath("./config")
 
 	if err := v.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+		var configFileNotFoundError viper.ConfigFileNotFoundError
+		if !errors.As(err, &configFileNotFoundError) {
 			return nil, fmt.Errorf("读取配置文件失败: %w", err)
 		}
 		fmt.Println("警告: config.yaml 未找到，将使用零值配置")
@@ -42,8 +44,8 @@ func LoadConfig() (*Config, error) {
 		val := v.GetString(key)
 		if len(val) > 3 && val[:2] == "${" && val[len(val)-1:] == "}" {
 			envKey := val[2 : len(val)-1]
-			envVal := os.Getenv(envKey)
-			if envVal == "" {
+			envVal, exists := os.LookupEnv(envKey)
+			if !exists {
 				return nil, fmt.Errorf("环境变量 %s 未设置，请检查 .env 文件", envKey)
 			}
 			v.Set(key, envVal)

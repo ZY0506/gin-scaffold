@@ -1,0 +1,24 @@
+# Air 热重载配置文件
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  cmd = "go build -o ./tmp/main ./cmd/server"
+  bin = "./tmp/main"
+  full_bin = "./tmp/main"
+  include_ext = ["go", "tpl", "tmpl", "html", "yaml", "yml", "toml", "env"]
+  exclude_dir = ["tmp", "vendor", "storage", "logs", ".git"]
+  exclude_regex = []
+  exclude_unchanged = true
+  follow_symlink = false
+  delay = 1000  # ms
+  stop_on_error = true
+  send_interrupt = true
+  kill_delay = 500  # ms
+
+[log]
+  main_only = false
+  time = true
+
+[misc]
+  clean_on_exit = true

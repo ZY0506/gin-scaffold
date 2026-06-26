@@ -20,8 +20,36 @@ import (
 	"github.com/ZY0506/gin-scaffold/internal/pkg/response"
 )
 
+type UserHandler struct {
+	svc         *application.UserService
+	saveDir     string
+	maxSize     int64
+	allowedExts map[string]bool
+}
+
+func NewUserHandler(svc *application.UserService, saveDir string, maxSize int64, allowedExts []string) *UserHandler {
+	exts := make(map[string]bool, len(allowedExts))
+	for _, ext := range allowedExts {
+		exts[strings.ToLower(ext)] = true
+	}
+	return &UserHandler{
+		svc:         svc,
+		saveDir:     saveDir,
+		maxSize:     maxSize,
+		allowedExts: exts,
+	}
+}
+
 // ChangePassword 修改密码
-// POST /api/v1/user/change-password
+// @Summary      修改密码
+// @Description  验证旧密码后修改为新密码
+// @Tags         用户模块
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        req body application.ChangePasswordReq true "密码信息"
+// @Success      200 {object} response.Response
+// @Router       /user/change-password [post]
 func (h *UserHandler) ChangePassword(c *gin.Context) {
 	userID := middleware.GetUserID(c)
 	if userID == 0 {
@@ -44,7 +72,15 @@ func (h *UserHandler) ChangePassword(c *gin.Context) {
 }
 
 // UpdateProfile 修改个人信息
-// PUT /api/v1/user/profile
+// @Summary      修改个人信息
+// @Description  修改昵称、头像、性别、生日等信息
+// @Tags         用户模块
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        req body application.UpdateProfileReq true "个人信息"
+// @Success      200 {object} response.Response
+// @Router       /user/profile [put]
 func (h *UserHandler) UpdateProfile(c *gin.Context) {
 	userID := middleware.GetUserID(c)
 	if userID == 0 {
@@ -67,7 +103,13 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 }
 
 // GetUserInfo 获取个人信息
-// GET /api/v1/user/profile
+// @Summary      获取个人信息
+// @Description  获取当前登录用户的详细信息
+// @Tags         用户模块
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200 {object} response.Response{data=application.UserInfoResp}
+// @Router       /user/profile [get]
 func (h *UserHandler) GetUserInfo(c *gin.Context) {
 	userID := middleware.GetUserID(c)
 	if userID == 0 {
@@ -85,7 +127,13 @@ func (h *UserHandler) GetUserInfo(c *gin.Context) {
 }
 
 // DeleteAccount 注销账户
-// DELETE /api/v1/user/account
+// @Summary      注销账户
+// @Description  永久注销当前登录用户的账号
+// @Tags         用户模块
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200 {object} response.Response
+// @Router       /user/account [delete]
 func (h *UserHandler) DeleteAccount(c *gin.Context) {
 	userID := middleware.GetUserID(c)
 	if userID == 0 {
@@ -102,7 +150,15 @@ func (h *UserHandler) DeleteAccount(c *gin.Context) {
 }
 
 // UploadAvatar 上传头像
-// POST /api/v1/user/avatar (multipart/form-data, field: "file")
+// @Summary      上传头像
+// @Description  上传用户头像，支持 jpg/png/gif/webp，最大 5MB
+// @Tags         用户模块
+// @Accept       mpfd
+// @Produce      json
+// @Security     BearerAuth
+// @Param        file formData file true "头像文件"
+// @Success      200 {object} response.Response{data=object{avatar=string}}
+// @Router       /user/avatar [post]
 func (h *UserHandler) UploadAvatar(c *gin.Context) {
 	userID := middleware.GetUserID(c)
 	if userID == 0 {
@@ -110,7 +166,6 @@ func (h *UserHandler) UploadAvatar(c *gin.Context) {
 		return
 	}
 
-	// 1. 获取上传文件
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
 		response.Fail(c, bizErrors.ErrBadRequest, "请选择要上传的文件")
@@ -118,32 +173,27 @@ func (h *UserHandler) UploadAvatar(c *gin.Context) {
 	}
 	defer file.Close()
 
-	// 2. 校验文件扩展名
 	ext := strings.ToLower(filepath.Ext(header.Filename))
 	if !h.allowedExts[ext] {
 		response.Fail(c, bizErrors.ErrFileTypeNotAllowed, fmt.Sprintf("不支持的文件类型: %s，允许: jpg/jpeg/png/gif/webp", ext))
 		return
 	}
 
-	// 3. 校验文件大小
 	if header.Size > h.maxSize {
 		response.Fail(c, bizErrors.ErrFileTooLarge, fmt.Sprintf("文件大小超过限制 (%d MB)", h.maxSize/(1024*1024)))
 		return
 	}
 
-	// 4. 确保存储目录存在
 	if err := os.MkdirAll(h.saveDir, 0755); err != nil {
 		response.Fail(c, bizErrors.ErrUploadFailed, "创建存储目录失败")
 		return
 	}
 
-	// 5. 生成唯一文件名: {userID}_{时间戳}_{4位随机}.{ext}
 	ts := time.Now().UnixMilli()
 	randSuffix := fmt.Sprintf("%04d", rand.Intn(10000))
 	filename := fmt.Sprintf("%d_%d_%s%s", userID, ts, randSuffix, ext)
 	savePath := filepath.Join(h.saveDir, filename)
 
-	// 6. 保存文件
 	out, err := os.Create(savePath)
 	if err != nil {
 		response.Fail(c, bizErrors.ErrUploadFailed, "文件保存失败")
@@ -157,17 +207,12 @@ func (h *UserHandler) UploadAvatar(c *gin.Context) {
 		return
 	}
 
-	// 7. 生成头像访问 URL
 	avatarURL := "/uploads/avatars/" + filename
 
-	// 8. 删除旧头像文件
 	if err := h.deleteOldAvatar(c.Request.Context(), userID, avatarURL); err != nil {
-		// 删除旧文件失败不影响主流程，只记录日志
 	}
 
-	// 9. 更新数据库中的头像字段
 	if err := h.svc.UpdateAvatar(c.Request.Context(), userID, avatarURL); err != nil {
-		// 数据库更新失败，删除已保存的文件
 		os.Remove(savePath)
 		response.Fail(c, bizErrors.ErrUploadFailed, "头像更新失败")
 		return
@@ -176,7 +221,6 @@ func (h *UserHandler) UploadAvatar(c *gin.Context) {
 	response.Success(c, gin.H{"avatar": avatarURL})
 }
 
-// deleteOldAvatar 删除用户旧的头像文件
 func (h *UserHandler) deleteOldAvatar(ctx context.Context, userID uint, newAvatarURL string) error {
 	user, err := h.svc.GetUserInfo(ctx, userID)
 	if err != nil {
@@ -188,54 +232,26 @@ func (h *UserHandler) deleteOldAvatar(ctx context.Context, userID uint, newAvata
 		return nil
 	}
 
-	// 只清理本地上传的头像文件
 	if strings.HasPrefix(oldURL, "/uploads/avatars/") {
 		filename := strings.TrimPrefix(oldURL, "/uploads/avatars/")
 		oldPath := filepath.Join(h.saveDir, filename)
-		os.Remove(oldPath) // 删除失败不影响主流程
+		os.Remove(oldPath)
 	}
 	return nil
 }
 
-// extractCode 从 error 中提取业务错误码
-func extractCode(err error) int {
-	var bizErr *bizErrors.Error
-	if errors.As(err, &bizErr) {
-		return bizErr.Code
-	}
-	return bizErrors.ErrInternal
-}
-
-// extractMsg 从 error 中提取用户可读的错误消息
-func extractMsg(err error) string {
-	var bizErr *bizErrors.Error
-	if errors.As(err, &bizErr) {
-		return bizErr.Msg
-	}
-	return "internal server error"
-}
-
-type UserHandler struct {
-	svc         *application.UserService
-	saveDir     string
-	maxSize     int64
-	allowedExts map[string]bool
-}
-
-func NewUserHandler(svc *application.UserService, saveDir string, maxSize int64, allowedExts []string) *UserHandler {
-	exts := make(map[string]bool, len(allowedExts))
-	for _, ext := range allowedExts {
-		exts[strings.ToLower(ext)] = true
-	}
-	return &UserHandler{
-		svc:         svc,
-		saveDir:     saveDir,
-		maxSize:     maxSize,
-		allowedExts: exts,
-	}
-}
-
-// List 用户列表
+// List 用户列表（管理端）
+// @Summary      用户列表
+// @Description  管理端分页查询用户列表
+// @Tags         管理端-用户
+// @Produce      json
+// @Security     BearerAuth
+// @Param        page query int false "页码" default(1)
+// @Param        page_size query int false "每页条数" default(20)
+// @Param        keyword query string false "搜索关键词"
+// @Param        status query int false "状态" Enums(0, 1)
+// @Success      200 {object} response.PageData{list=[]application.UserItemResp}
+// @Router       /admin/users [get]
 func (h *UserHandler) List(c *gin.Context) {
 	var req application.UserListReq
 	if err := c.ShouldBindQuery(&req); err != nil {
@@ -252,7 +268,15 @@ func (h *UserHandler) List(c *gin.Context) {
 	response.Page(c, users, total, int64(req.Page), int64(req.PageSize))
 }
 
-// GetByID 用户详情
+// GetByID 用户详情（管理端）
+// @Summary      用户详情
+// @Description  管理端获取指定用户详细信息
+// @Tags         管理端-用户
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id path int true "用户ID"
+// @Success      200 {object} response.Response{data=application.UserItemResp}
+// @Router       /admin/users/{id} [get]
 func (h *UserHandler) GetByID(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
@@ -273,7 +297,16 @@ func (h *UserHandler) GetByID(c *gin.Context) {
 	response.Success(c, user)
 }
 
-// Create 创建用户（管理员）
+// Create 创建用户（管理端）
+// @Summary      创建用户
+// @Description  管理端创建新用户
+// @Tags         管理端-用户
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        req body application.AdminCreateUserReq true "用户信息"
+// @Success      200 {object} response.Response{data=application.UserItemResp}
+// @Router       /admin/users [post]
 func (h *UserHandler) Create(c *gin.Context) {
 	var req application.AdminCreateUserReq
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -294,7 +327,17 @@ func (h *UserHandler) Create(c *gin.Context) {
 	response.Success(c, user)
 }
 
-// Update 更新用户（管理员）
+// Update 更新用户（管理端）
+// @Summary      更新用户
+// @Description  管理端更新用户信息
+// @Tags         管理端-用户
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id path int true "用户ID"
+// @Param        req body application.AdminUpdateUserReq true "更新信息"
+// @Success      200 {object} response.Response{data=application.UserItemResp}
+// @Router       /admin/users/{id} [put]
 func (h *UserHandler) Update(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
@@ -321,7 +364,17 @@ func (h *UserHandler) Update(c *gin.Context) {
 	response.Success(c, user)
 }
 
-// ToggleStatus 启用/禁用用户
+// ToggleStatus 启用/禁用用户（管理端）
+// @Summary      启用/禁用用户
+// @Description  管理端启用或禁用指定用户
+// @Tags         管理端-用户
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id path int true "用户ID"
+// @Param        req body object{status=int} true "状态: 1启用 0禁用"
+// @Success      200 {object} response.Response
+// @Router       /admin/users/{id}/status [patch]
 func (h *UserHandler) ToggleStatus(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
@@ -347,4 +400,22 @@ func (h *UserHandler) ToggleStatus(c *gin.Context) {
 	}
 
 	response.Success(c, nil)
+}
+
+// extractCode 从 error 中提取业务错误码
+func extractCode(err error) int {
+	var bizErr *bizErrors.Error
+	if errors.As(err, &bizErr) {
+		return bizErr.Code
+	}
+	return bizErrors.ErrInternal
+}
+
+// extractMsg 从 error 中提取用户可读的错误消息
+func extractMsg(err error) string {
+	var bizErr *bizErrors.Error
+	if errors.As(err, &bizErr) {
+		return bizErr.Msg
+	}
+	return "internal server error"
 }

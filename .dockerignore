@@ -1,0 +1,6 @@
+storage/
+tmp/
+logs/
+.git/
+.DS_Store
+*.md

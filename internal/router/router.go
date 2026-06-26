@@ -2,6 +2,8 @@ package router
 
 import (
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 
 	adminHandler "github.com/ZY0506/gin-scaffold/internal/modules/admin/interfaces"
 	authHandler "github.com/ZY0506/gin-scaffold/internal/modules/auth/interfaces"
@@ -23,6 +25,9 @@ func Register(
 	adminPublicHandler *adminHandler.AdminHandler,
 	adminMiddlewares ...gin.HandlerFunc,
 ) {
+	// Swagger 文档
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
 	// API v1 路由组
 	v1 := r.Group("/api/v1")
 

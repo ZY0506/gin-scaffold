@@ -16,7 +16,6 @@ type AdminHandler struct {
 	jwt      JWTService
 }
 
-// JWTService JWT 生成接口（适配 auth/infrastructure.JWTService）
 type JWTService interface {
 	GeneratePair(userID uint, role string) (accessToken, refreshToken string, err error)
 }
@@ -25,9 +24,15 @@ func NewAdminHandler(svc *application.AdminService, opLogSvc *application.Operat
 	return &AdminHandler{svc: svc, opLogSvc: opLogSvc, jwt: jwt}
 }
 
-// ======================== 管理员登录 ========================
-
 // Login 管理员登录
+// @Summary      管理员登录
+// @Description  管理员通过用户名密码登录，返回双 Token
+// @Tags         管理端-管理员
+// @Accept       json
+// @Produce      json
+// @Param        req body application.AdminLoginReq true "登录信息"
+// @Success      200 {object} response.Response
+// @Router       /admin/login [post]
 func (h *AdminHandler) Login(c *gin.Context) {
 	var req application.AdminLoginReq
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -54,9 +59,16 @@ func (h *AdminHandler) Login(c *gin.Context) {
 	})
 }
 
-// ======================== 管理员 CRUD ========================
-
 // List 管理员列表
+// @Summary      管理员列表
+// @Description  分页查询所有管理员账号
+// @Tags         管理端-管理员
+// @Produce      json
+// @Security     BearerAuth
+// @Param        page query int false "页码" default(1)
+// @Param        page_size query int false "每页条数" default(20)
+// @Success      200 {object} response.PageData{list=[]application.AdminItemResp}
+// @Router       /admin/admins [get]
 func (h *AdminHandler) List(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
@@ -71,6 +83,14 @@ func (h *AdminHandler) List(c *gin.Context) {
 }
 
 // GetByID 管理员详情
+// @Summary      管理员详情
+// @Description  获取指定管理员的详细信息
+// @Tags         管理端-管理员
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id path int true "管理员ID"
+// @Success      200 {object} response.Response{data=application.AdminItemResp}
+// @Router       /admin/admins/{id} [get]
 func (h *AdminHandler) GetByID(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
@@ -92,6 +112,15 @@ func (h *AdminHandler) GetByID(c *gin.Context) {
 }
 
 // Create 创建管理员
+// @Summary      创建管理员
+// @Description  创建新的管理员账号
+// @Tags         管理端-管理员
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        req body application.AdminCreateReq true "管理员信息"
+// @Success      200 {object} response.Response{data=application.AdminItemResp}
+// @Router       /admin/admins [post]
 func (h *AdminHandler) Create(c *gin.Context) {
 	var req application.AdminCreateReq
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -113,6 +142,16 @@ func (h *AdminHandler) Create(c *gin.Context) {
 }
 
 // Update 修改管理员
+// @Summary      修改管理员
+// @Description  修改管理员昵称、密码、状态
+// @Tags         管理端-管理员
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id path int true "管理员ID"
+// @Param        req body application.AdminUpdateReq true "修改信息"
+// @Success      200 {object} response.Response
+// @Router       /admin/admins/{id} [put]
 func (h *AdminHandler) Update(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
@@ -138,9 +177,16 @@ func (h *AdminHandler) Update(c *gin.Context) {
 	response.Success(c, nil)
 }
 
-// ======================== 操作日志 ========================
-
-// ListOperationLogs 操作日志列表（分页）
+// ListOperationLogs 操作日志列表
+// @Summary      操作日志列表
+// @Description  分页查询管理员操作日志
+// @Tags         管理端-管理员
+// @Produce      json
+// @Security     BearerAuth
+// @Param        page query int false "页码" default(1)
+// @Param        page_size query int false "每页条数" default(20)
+// @Success      200 {object} response.PageData{list=[]domain.OperationLog}
+// @Router       /admin/operation-logs [get]
 func (h *AdminHandler) ListOperationLogs(c *gin.Context) {
 	var req application.OperationLogListReq
 	if err := c.ShouldBindQuery(&req); err != nil {
@@ -156,8 +202,6 @@ func (h *AdminHandler) ListOperationLogs(c *gin.Context) {
 
 	response.Page(c, list, total, int64(req.Page), int64(req.PageSize))
 }
-
-// ======================== 辅助函数 ========================
 
 func extractCode(err error) int {
 	var bizErr *errors.Error

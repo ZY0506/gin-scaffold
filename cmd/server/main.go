@@ -1,9 +1,29 @@
+// @title           Gin Scaffold API
+// @version         1.0.0
+// @description     Go 后端脚手架 —— Gin + GORM + Casbin + JWT 双 Token
+// @termsOfService  https://github.com/ZY0506/gin-scaffold
+
+// @contact.name   ZhangYu
+// @contact.url    https://github.com/ZY0506
+// @contact.email  zy0506@example.com
+
+// @license.name  MIT
+// @license.url   https://opensource.org/licenses/MIT
+
+// @host      localhost:8080
+// @BasePath  /api/v1
+
+// @securityDefinitions.apikey  BearerAuth
+// @in                          header
+// @name                        Authorization
+// @description                 Bearer Token，格式: Bearer <token>
 package main
 
 import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
@@ -170,7 +190,7 @@ func initRedis(cfg *config.Config) *redis.Client {
 	})
 }
 
-// seedDefaultAdmin 首次启动时创建默认管理员
+// seedDefaultAdmin 首次启动时创建默认管理员，密码从 ADMIN_PASSWORD 环境变量读取
 func seedDefaultAdmin(db *gorm.DB, logger *zap.Logger) {
 	var count int64
 	db.Model(&adminDomain.Admin{}).Count(&count)
@@ -178,7 +198,13 @@ func seedDefaultAdmin(db *gorm.DB, logger *zap.Logger) {
 		return
 	}
 
-	hashedPwd, err := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
+	password := os.Getenv("ADMIN_PASSWORD")
+	if password == "" {
+		password = "admin123"
+		logger.Warn("未设置 ADMIN_PASSWORD 环境变量，使用默认密码 admin123")
+	}
+
+	hashedPwd, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		logger.Warn("管理员密码加密失败", zap.Error(err))
 		return
@@ -198,6 +224,5 @@ func seedDefaultAdmin(db *gorm.DB, logger *zap.Logger) {
 
 	logger.Info("默认管理员已创建",
 		zap.String("username", "admin"),
-		zap.String("password", "admin123"),
 	)
 }
