@@ -161,7 +161,7 @@ func (s *AuthService) Login(ctx context.Context, req *LoginReq, ip string) (*Aut
 		return nil, bizErrors.New(bizErrors.ErrBlacklisted, "账号已被限制登录")
 	}
 
-	// 5. 生成双 Token（新注册用户使用默认角色）
+	// 5. 生成双 Token
 	role := roleUser
 	accessToken, refreshToken, err := s.jwtSvc.GeneratePair(user.ID, role)
 	if err != nil {

@@ -26,7 +26,7 @@ type TokenBlacklist interface {
 
 // JWTAuth JWT 鉴权中间件
 // 从 Authorization Header 提取 Bearer Token，校验后将用户信息注入 gin.Context
-// 注入的键值：user_id (uint), role (string), jti (string)
+// 注入的键值：user_id (uint), username (string), role (string), jti (string)
 func JWTAuth(jwtService JWTService, blacklist TokenBlacklist) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")

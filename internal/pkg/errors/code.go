@@ -38,3 +38,9 @@ const (
 	ErrFileTooLarge       = 30009 // 文件大小超限
 	ErrUploadFailed       = 30010 // 文件保存失败
 )
+
+// 管理员模块错误码 4xxxx
+const (
+	ErrAdminNotFound      = 40001 // 管理员不存在
+	ErrAdminUsernameExist = 40002 // 管理员用户名已存在
+)
