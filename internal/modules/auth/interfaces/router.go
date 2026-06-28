@@ -2,8 +2,6 @@ package interfaces
 
 import (
 	"github.com/gin-gonic/gin"
-
-	"github.com/ZY0506/gin-scaffold/internal/modules/auth/application"
 )
 
 // RegisterAuthRoutes 注册认证模块路由
@@ -33,15 +31,4 @@ func RegisterAuthRoutes(r *gin.RouterGroup, handler *AuthHandler, authMiddleware
 		// 登出
 		authProtected.POST("/logout", handler.Logout)
 	}
-}
-
-// RegisterAuthRoutesWithDI 带依赖注入的路由注册（便捷方法，在路由层完成依赖组装）
-// 适用于 Wire / 手动 DI 的场景
-func RegisterAuthRoutesWithDI(
-	r *gin.RouterGroup,
-	svc *application.AuthService,
-	authMiddleware gin.HandlerFunc,
-) {
-	handler := NewAuthHandler(svc)
-	RegisterAuthRoutes(r, handler, authMiddleware)
 }
