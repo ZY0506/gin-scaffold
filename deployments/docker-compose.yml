@@ -1,6 +1,8 @@
+name: gin_scaffold
 
 services:
   app:
+    container_name: app-gin_scaffold
     build:
       context: ..
       dockerfile: deployments/Dockerfile
@@ -35,6 +37,7 @@ services:
       - "13306:3306"
     volumes:
       - ../storage/mysql:/var/lib/mysql
+      - ../migrations:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 5s
