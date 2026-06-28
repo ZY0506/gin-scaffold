@@ -23,17 +23,17 @@ func (s *AdminService) Login(ctx context.Context, req *AdminLoginReq, ip string)
 	admin, err := s.repo.FindByUsername(ctx, req.Username)
 	if err != nil {
 		if errors.IsCode(err, errors.ErrAdminNotFound) {
-			return 0, "", errors.New(errors.ErrLoginFailed, "用户名或密码错误")
+			return 0, "", adminDomain.ErrLoginFailed
 		}
 		return 0, "", err
 	}
 
 	if admin.IsDisabled() {
-		return 0, "", errors.New(errors.ErrUserDisabled, "管理员账号已被禁用")
+		return 0, "", adminDomain.ErrAdminDisabled
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(admin.Password), []byte(req.Password)); err != nil {
-		return 0, "", errors.New(errors.ErrLoginFailed, "用户名或密码错误")
+		return 0, "", adminDomain.ErrLoginFailed
 	}
 
 	return admin.ID, admin.Username, nil

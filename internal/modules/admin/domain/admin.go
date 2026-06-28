@@ -18,3 +18,7 @@ type Admin struct {
 func (a *Admin) IsDisabled() bool {
 	return a.Status == 0
 }
+
+func (a *Admin) TableName() string {
+	return "admins"
+}

@@ -12,3 +12,7 @@ type OperationLog struct {
 	ClientIP   string    `gorm:"size:45" json:"client_ip"`
 	CreatedAt  time.Time `json:"created_at"`
 }
+
+func (o *OperationLog) TableName() string {
+	return "operation_logs"
+}

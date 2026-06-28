@@ -157,7 +157,7 @@ func (s *UserService) ChangePassword(ctx context.Context, userID uint, req *Chan
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.OldPassword)); err != nil {
-		return errors.New(errors.ErrPwdMismatch, "原密码错误")
+		return userDomain.ErrPwdMismatch
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
